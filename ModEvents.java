@@ -128,13 +128,18 @@ public class ModEvents {
 
     public static int getUpgradeCost(String statName, int currentLevel) {
         if (currentLevel >= 100) return 9999999; 
-        double baseMult = 1.15;
+        
+        // 【修改】讀取 JSON 中的升級曲線
+        double baseMult = ModConfig.DATA.normalUpgradeCurve;
+        if (statName.equals("CON")) baseMult = ModConfig.DATA.conUpgradeCurve;
+        
         double physMod = 1.0;
-        if (statName.equals("CON")) baseMult = 1.25;
         if (PlayerStats.PHYSIQUE.contains("荒古聖體") && statName.equals("CON")) physMod = 1.5;
         if (PlayerStats.PHYSIQUE.contains("虛空劍心") && (statName.equals("STR") || statName.equals("WIND"))) physMod = 0.6;
         if (PlayerStats.PHYSIQUE.contains("混沌靈體") && (statName.equals("FIRE") || statName.equals("WATER") || statName.equals("EARTH"))) physMod = 0.7;
-        return (int) (100 * Math.pow(baseMult, currentLevel) * physMod);
+        
+        // 【修改】讀取 JSON 中的基礎費用
+        return (int) (ModConfig.DATA.baseUpgradeCost * Math.pow(baseMult, currentLevel) * physMod);
     }
 
     @SubscribeEvent
@@ -166,7 +171,8 @@ public class ModEvents {
 
             // --- 【關鍵修復】挨打賺錢，強制只在伺服器端計算，然後同步給玩家 ---
             if (!player.level().isClientSide() && event.getSource().getEntity() instanceof LivingEntity) {
-                int coinsEarned = (int) (event.getAmount() * 10);
+                // 【修改】讀取 JSON 中的挨打獲利倍率
+int coinsEarned = (int) (event.getAmount() * ModConfig.DATA.coinsPerDamage);
                 int currentCoins = player.getPersistentData().getInt("Sys_Coins");
                 int newCoins = currentCoins + coinsEarned;
                 

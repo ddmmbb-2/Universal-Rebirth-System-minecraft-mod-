@@ -49,6 +49,10 @@ public class ExampleMod {
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("轉生系統：通用設置載入中...");
+
+        // --- 啟動時讀取通用設定檔 ---
+        ModConfig.load();
+
         
         // 啟動時讀取萬界商城 JSON
         ShopManager.loadShop(); 
