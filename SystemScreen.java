@@ -13,27 +13,23 @@ import java.util.Random;
 
 public class SystemScreen extends Screen {
 
-    // 0 = 主頁面 (Main), 1 = 萬界商城 (Shop), 2 = 命運抽籤 (Gacha)
     private int currentTab = 0; 
     private final Random random = new Random();
     
-    // 【關鍵修改 1】加上 static！讓商品清單變成「全域記憶」，關掉選單也不會遺忘
     private static List<ShopItem> currentShopItems = new ArrayList<>();
 
     public SystemScreen() {
         super(Component.literal("Universal System"));
-        // 【關鍵修改 2】只有在「系統剛啟動、貨架全空」的時候才免費進貨一次
         if (currentShopItems.isEmpty()) {
             refreshShop();
         }
     }
 
-    // 隨機從總商品庫中挑選 4 個商品 (改為 static 方便互相呼叫)
     private static void refreshShop() {
         if (ShopManager.SHOP_ITEMS.isEmpty()) return;
         List<ShopItem> allItems = new ArrayList<>(ShopManager.SHOP_ITEMS);
-        Collections.shuffle(allItems); // 將列表順序打亂 (洗牌)
-        currentShopItems = allItems.subList(0, Math.min(4, allItems.size())); // 取前 4 個
+        Collections.shuffle(allItems); 
+        currentShopItems = allItems.subList(0, Math.min(4, allItems.size())); 
     }
 
     @Override
@@ -41,9 +37,6 @@ public class SystemScreen extends Screen {
         int midX = this.width / 2;
         int midY = this.height / 2;
 
-        // ==========================================
-        // 頂部分頁按鈕 (Tab Buttons)
-        // ==========================================
         int tabWidth = 100;
         this.addRenderableWidget(Button.builder(Component.literal("主頁 / Main"), (btn) -> switchTab(0))
                 .bounds(midX - 160, midY - 100, tabWidth, 20).build());
@@ -73,6 +66,10 @@ public class SystemScreen extends Screen {
                 ModEvents.PlayerStats.COINS -= 1000;
                 String[] physiques = { "§6[Ancient Holy Body] 荒古聖體", "§b[Void Sword Heart] 虛空劍心", "§d[Chaos Spirit] 混沌靈體", "§7[Mortal Body] 凡體" };
                 ModEvents.PlayerStats.PHYSIQUE = physiques[random.nextInt(physiques.length)];
+                
+                // 【修復】通知伺服器洗髓並扣款
+                PacketHandler.INSTANCE.sendToServer(new SystemActionPacket("rebirth", ModEvents.PlayerStats.PHYSIQUE, 1000));
+
                 if (Minecraft.getInstance().player != null) {
                     ModEvents.applyConstitution(Minecraft.getInstance().player);
                     Minecraft.getInstance().player.sendSystemMessage(Component.literal("§a[System] 洗髓成功！當前體質：" + ModEvents.PlayerStats.PHYSIQUE));
@@ -87,43 +84,69 @@ public class SystemScreen extends Screen {
         // 物理系
         this.addRenderableWidget(Button.builder(Component.literal("§c力量 STR"), (btn) -> {
             int cost = ModEvents.getUpgradeCost("STR", ModEvents.PlayerStats.STR);
-            if (ModEvents.PlayerStats.COINS >= cost) { ModEvents.PlayerStats.COINS -= cost; ModEvents.PlayerStats.STR++; }
+            if (ModEvents.PlayerStats.COINS >= cost) { 
+                ModEvents.PlayerStats.COINS -= cost; ModEvents.PlayerStats.STR++; 
+                PacketHandler.INSTANCE.sendToServer(new SystemActionPacket("upgrade", "STR", cost)); // 【修復】發送伺服器封包
+            }
         }).bounds(col1, midY - 35, btnW, 20).build());
+        
         this.addRenderableWidget(Button.builder(Component.literal("§a體質 CON"), (btn) -> {
             int cost = ModEvents.getUpgradeCost("CON", ModEvents.PlayerStats.CON);
-            if (ModEvents.PlayerStats.COINS >= cost) { ModEvents.PlayerStats.COINS -= cost; ModEvents.PlayerStats.CON++; if (Minecraft.getInstance().player != null) ModEvents.applyConstitution(Minecraft.getInstance().player); }
+            if (ModEvents.PlayerStats.COINS >= cost) { 
+                ModEvents.PlayerStats.COINS -= cost; ModEvents.PlayerStats.CON++; 
+                PacketHandler.INSTANCE.sendToServer(new SystemActionPacket("upgrade", "CON", cost));
+                if (Minecraft.getInstance().player != null) ModEvents.applyConstitution(Minecraft.getInstance().player); 
+            }
         }).bounds(col1, midY - 10, btnW, 20).build());
+        
         this.addRenderableWidget(Button.builder(Component.literal("§e敏捷 DEX"), (btn) -> {
             int cost = ModEvents.getUpgradeCost("DEX", ModEvents.PlayerStats.DEX);
-            if (ModEvents.PlayerStats.COINS >= cost) { ModEvents.PlayerStats.COINS -= cost; ModEvents.PlayerStats.DEX++; if (Minecraft.getInstance().player != null) ModEvents.applyConstitution(Minecraft.getInstance().player); }
+            if (ModEvents.PlayerStats.COINS >= cost) { 
+                ModEvents.PlayerStats.COINS -= cost; ModEvents.PlayerStats.DEX++; 
+                PacketHandler.INSTANCE.sendToServer(new SystemActionPacket("upgrade", "DEX", cost));
+                if (Minecraft.getInstance().player != null) ModEvents.applyConstitution(Minecraft.getInstance().player); 
+            }
         }).bounds(col1, midY + 15, btnW, 20).build());
 
         // 元素系
         this.addRenderableWidget(Button.builder(Component.literal("§b風系 WIND"), (btn) -> {
             int cost = ModEvents.getUpgradeCost("WIND", ModEvents.PlayerStats.WIND);
-            if (ModEvents.PlayerStats.COINS >= cost) { ModEvents.PlayerStats.COINS -= cost; ModEvents.PlayerStats.WIND++; }
+            if (ModEvents.PlayerStats.COINS >= cost) { 
+                ModEvents.PlayerStats.COINS -= cost; ModEvents.PlayerStats.WIND++; 
+                PacketHandler.INSTANCE.sendToServer(new SystemActionPacket("upgrade", "WIND", cost));
+            }
         }).bounds(col2, midY - 35, btnW, 20).build());
+        
         this.addRenderableWidget(Button.builder(Component.literal("§4火系 FIRE"), (btn) -> {
             int cost = ModEvents.getUpgradeCost("FIRE", ModEvents.PlayerStats.FIRE);
-            if (ModEvents.PlayerStats.COINS >= cost) { ModEvents.PlayerStats.COINS -= cost; ModEvents.PlayerStats.FIRE++; }
+            if (ModEvents.PlayerStats.COINS >= cost) { 
+                ModEvents.PlayerStats.COINS -= cost; ModEvents.PlayerStats.FIRE++; 
+                PacketHandler.INSTANCE.sendToServer(new SystemActionPacket("upgrade", "FIRE", cost));
+            }
         }).bounds(col2, midY - 10, btnW, 20).build());
+        
         this.addRenderableWidget(Button.builder(Component.literal("§9水系 WATER"), (btn) -> {
             int cost = ModEvents.getUpgradeCost("WATER", ModEvents.PlayerStats.WATER);
-            if (ModEvents.PlayerStats.COINS >= cost) { ModEvents.PlayerStats.COINS -= cost; ModEvents.PlayerStats.WATER++; }
+            if (ModEvents.PlayerStats.COINS >= cost) { 
+                ModEvents.PlayerStats.COINS -= cost; ModEvents.PlayerStats.WATER++; 
+                PacketHandler.INSTANCE.sendToServer(new SystemActionPacket("upgrade", "WATER", cost));
+            }
         }).bounds(col2, midY + 15, btnW, 20).build());
+        
         this.addRenderableWidget(Button.builder(Component.literal("§6土系 EARTH"), (btn) -> {
             int cost = ModEvents.getUpgradeCost("EARTH", ModEvents.PlayerStats.EARTH);
-            if (ModEvents.PlayerStats.COINS >= cost) { ModEvents.PlayerStats.COINS -= cost; ModEvents.PlayerStats.EARTH++; }
+            if (ModEvents.PlayerStats.COINS >= cost) { 
+                ModEvents.PlayerStats.COINS -= cost; ModEvents.PlayerStats.EARTH++; 
+                PacketHandler.INSTANCE.sendToServer(new SystemActionPacket("upgrade", "EARTH", cost));
+            }
         }).bounds(col2, midY + 40, btnW, 20).build());
     }
 
     // ==========================================
-    // 分頁 1: 商城 (Shop Tab) - 花錢手動刷新
+    // 分頁 1: 商城 (Shop Tab) 
     // ==========================================
     private void initShopTab(int midX, int midY) {
         int startY = midY - 35;
-        
-        // 讀取 currentShopItems 生成按鈕
         for (int i = 0; i < currentShopItems.size(); i++) {
             ShopItem item = currentShopItems.get(i);
             int yOffset = startY + (i * 30); 
@@ -136,19 +159,17 @@ public class SystemScreen extends Screen {
             }).bounds(midX + 60, yOffset - 4, 100, 20).build());
         }
 
-        // 手動刷新商城按鈕 (維持不變，只要扣錢就會重洗牌並重繪畫面)
         this.addRenderableWidget(Button.builder(Component.literal("§d刷新商城 / Refresh (100)"), (btn) -> {
             if (ModEvents.PlayerStats.COINS >= 100) {
-                ModEvents.PlayerStats.COINS -= 100; // 扣錢
-                refreshShop(); // 重新洗牌
-                this.rebuildWidgets(); // 重新繪製畫面按鈕
+                ModEvents.PlayerStats.COINS -= 100; 
+                refreshShop(); 
+                this.rebuildWidgets(); 
+                // 【修復】通知伺服器扣除刷新費用
+                PacketHandler.INSTANCE.sendToServer(new SystemActionPacket("refresh", "none", 100));
             }
         }).bounds(midX - 50, midY + 90, 100, 20).build());
     }
 
-    // ==========================================
-    // 分頁 2: 抽籤 (Gacha Tab) 
-    // ==========================================
     private void initGachaTab(int midX, int midY) {
         this.addRenderableWidget(Button.builder(Component.literal("§a木質寶箱 / Wooden (100)"), (btn) -> rollGacha(100, 80))
                 .bounds(midX - 75, midY - 30, 150, 20).build());
@@ -196,7 +217,6 @@ public class SystemScreen extends Screen {
         
         } else if (currentTab == 1) {
             guiGraphics.drawCenteredString(this.font, "§b【萬界商城 / Universal Shop】", midX, midY - 65, 0xFFFFFF);
-            
             int startY = midY - 35;
             for (int i = 0; i < currentShopItems.size(); i++) {
                 ShopItem item = currentShopItems.get(i);
