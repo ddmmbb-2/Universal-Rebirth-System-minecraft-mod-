@@ -164,9 +164,20 @@ public class ModEvents {
                 return; 
             }
 
-            // 挨打賺錢
-            if (event.getSource().getEntity() instanceof LivingEntity) {
-                PlayerStats.COINS += (int) (event.getAmount() * 10);
+            // --- 【關鍵修復】挨打賺錢，強制只在伺服器端計算，然後同步給玩家 ---
+            if (!player.level().isClientSide() && event.getSource().getEntity() instanceof LivingEntity) {
+                int coinsEarned = (int) (event.getAmount() * 10);
+                int currentCoins = player.getPersistentData().getInt("Sys_Coins");
+                int newCoins = currentCoins + coinsEarned;
+                
+                // 1. 存入伺服器端真實 NBT
+                player.getPersistentData().putInt("Sys_Coins", newCoins);
+                
+                // 2. 發送運鈔車封包，通知客戶端更新畫面
+                PacketHandler.INSTANCE.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> (net.minecraft.server.level.ServerPlayer) player), new SyncCoinPacket(newCoins));
+
+                // 3. 顯示入帳文字
+                player.displayClientMessage(Component.literal("§e§lCoins + " + coinsEarned), true);
             }
 
             // 【火系 FIRE】平滑減免火焰傷害
@@ -208,19 +219,11 @@ public class ModEvents {
     // 【水系 WATER】延長換氣 & 【土系 EARTH】連鎖挖礦
     // ==========================================
     @SubscribeEvent
-    public static void onBlockBreakSpeed(PlayerEvent.BreakSpeed event) {
-        if (event.getEntity() != null && HAS_AWAKENED) {
-            if (PlayerStats.WATER >= 50) {
-                float waterBonus = ((PlayerStats.WATER - 50) / 50.0f) * 1.0f;
-                event.setNewSpeed(event.getOriginalSpeed() * (1.0f + waterBonus));
-            }
-        }
-    }
-
-    @SubscribeEvent
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
         Player player = event.getPlayer();
-        if (player != null && !player.level().isClientSide() && HAS_AWAKENED) {
+        
+        // 【關鍵修改】在這裡加上 player.isCrouching()，確保玩家處於潛行狀態才會執行
+        if (player != null && !player.level().isClientSide() && HAS_AWAKENED && player.isCrouching()) {
             // 【土系 EARTH】連鎖挖礦 (指數曲線)
             int maxChain = (int) (Math.pow(PlayerStats.EARTH / 100.0f, 2) * 255);
             

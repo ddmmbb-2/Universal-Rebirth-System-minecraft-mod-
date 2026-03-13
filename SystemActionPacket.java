@@ -47,11 +47,15 @@ public class SystemActionPacket {
                 int serverCoins = player.getPersistentData().getInt("Sys_Coins");
                 
                 if (serverCoins >= cost) {
-                    // 2. 扣款並存檔
-                    player.getPersistentData().putInt("Sys_Coins", serverCoins - cost);
+                        int newCoins = serverCoins - cost;
+                        // 1. 伺服器扣款存檔
+                        player.getPersistentData().putInt("Sys_Coins", newCoins);
+                        
+                        // 2. 【關鍵新增】伺服器扣款後，立刻發封包叫客戶端同步最新餘額！
+                        PacketHandler.INSTANCE.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player), new SyncCoinPacket(newCoins));
 
-                    // 3. 發放商城物品
-                    if (action.equals("buy")) {
+                        // 3. 發放商城物品
+                        if (action.equals("buy")) {
                         Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(payload));
                         if (item != null && item != Items.AIR) {
                             player.getInventory().add(new ItemStack(item, 1)); // 給予物品

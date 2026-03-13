@@ -18,10 +18,19 @@ public class PacketHandler {
     // 註冊我們的封包
     public static void register() {
         int id = 0;
+        
+        // 1. 客戶端 -> 伺服器 (買東西、抽籤)
         INSTANCE.messageBuilder(SystemActionPacket.class, id++)
                 .encoder(SystemActionPacket::encode)
                 .decoder(SystemActionPacket::new)
                 .consumerNetworkThread(SystemActionPacket::handle)
+                .add();
+                
+        // 2. 伺服器 -> 客戶端 (同步最新餘額給 UI)
+        INSTANCE.messageBuilder(SyncCoinPacket.class, id++)
+                .encoder(SyncCoinPacket::encode)
+                .decoder(SyncCoinPacket::new)
+                .consumerNetworkThread(SyncCoinPacket::handle)
                 .add();
     }
 }
