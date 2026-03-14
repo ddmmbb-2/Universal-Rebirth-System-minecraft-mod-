@@ -19,8 +19,11 @@ public class ModConfig {
     public static class Settings {
         public double coinsPerDamage = 10.0;       // 每受到 1 點傷害獲得的代幣
         public int baseUpgradeCost = 100;          // 升級的基礎代幣消耗
-        public double normalUpgradeCurve = 1.15;   // 一般屬性升級曲線 (1.15 = 每次變貴 15%)
-        public double conUpgradeCurve = 1.25;      // 體質(CON)升級曲線 (1.25 = 每次變貴 25%)
+        public double normalUpgradeCurve = 1.15;   // 一般屬性升級曲線
+        public double conUpgradeCurve = 1.25;      // 體質(CON)升級曲線
+        
+        // 【新增這行】土系滿級(100級)時的最大減傷比例 (0.75 = 75%)
+        public double earthMaxDamageReduction = 0.75; 
     }
 
     // 載入 JSON

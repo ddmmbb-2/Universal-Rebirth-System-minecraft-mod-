@@ -205,7 +205,9 @@ public class ModEvents {
 
             // 【土系 EARTH】平滑物理減傷
             if (!event.isCanceled()) {
-                float earthReduction = (PlayerStats.EARTH / 100.0f) * 0.5f; 
+                // 讀取設定檔的最大減傷比例 (將 double 轉為 float)
+                float maxReduction = (float) ModConfig.DATA.earthMaxDamageReduction;
+                float earthReduction = (PlayerStats.EARTH / 100.0f) * maxReduction; 
                 event.setAmount(event.getAmount() * (1.0f - earthReduction));
             }
         }
