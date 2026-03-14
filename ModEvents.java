@@ -154,8 +154,8 @@ public class ModEvents {
         }
     }
 
-    // ==========================================
-    // 受傷邏輯 (火系免疫、土系減傷、感知迴避)
+// ==========================================
+    // 受傷邏輯 (風系免疫摔落、火系免疫、土系減傷、感知迴避)
     // ==========================================
     @SubscribeEvent
     public static void onPlayerHurt(LivingHurtEvent event) {
@@ -169,10 +169,20 @@ public class ModEvents {
                 return; 
             }
 
-            // --- 【關鍵修復】挨打賺錢，強制只在伺服器端計算，然後同步給玩家 ---
+            // 【風系 WIND】摔落傷害減免 (20級解鎖二段跳時即達到 100% 免疫)
+            if (event.getSource().is(net.minecraft.tags.DamageTypeTags.IS_FALL)) {
+                float fallReduction = PlayerStats.WIND / 20.0f;
+                if (fallReduction >= 1.0f) {
+                    event.setCanceled(true); // 完全免疫摔落
+                    return;
+                } else {
+                    event.setAmount(event.getAmount() * (1.0f - fallReduction));
+                }
+            }
+
+            // --- 挨打賺錢，強制只在伺服器端計算，然後同步給玩家 ---
             if (!player.level().isClientSide() && event.getSource().getEntity() instanceof LivingEntity) {
-                // 【修改】讀取 JSON 中的挨打獲利倍率
-int coinsEarned = (int) (event.getAmount() * ModConfig.DATA.coinsPerDamage);
+                int coinsEarned = (int) (event.getAmount() * ModConfig.DATA.coinsPerDamage);
                 int currentCoins = player.getPersistentData().getInt("Sys_Coins");
                 int newCoins = currentCoins + coinsEarned;
                 
